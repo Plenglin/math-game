@@ -1,22 +1,43 @@
 import random
+import time
 
 import pygame
+from pygame.font import Font
 
-pygame.font.init()
+import colors
 
-equationFont = pygame.font.Font('freesansbold.ttf', 20)
+pygame.init()
+
+rockets = pygame.image.load('assets/rockets.png')
+
+ROCKET1 = pygame.image.load('assets/rocket_1.png')
+ROCKET2 = pygame.image.load('assets/rocket_2.png')
+ROCKET3 = pygame.image.load('assets/rocket_3.png')
+
 
 class Enemy():
 
     level = 0
     equation = ''
     solution = {0}
+    gameResolution = (0, 0)
+    y = 0
 
-    def __init__(self, level):
+    spawn = 0
+    impact = 0
+
+    def __init__(self, level, resolution):
+        
         self.level = level
-        self.solution, expressions = type(self).generate(level)
+
+        self.gameResolution = resolution
+        
+        self.solution, expressions = self.generate(level)
         random.shuffle(expressions)
         self.equation = ' = '.join(expressions)
+
+        self.spawn = time.time()
+        self.impact = self.spawn + self.getTime()
 
     def __str__(self):
         return '{}; x = {}'.format(self.equation, self.solutions)
@@ -62,6 +83,34 @@ class Enemy():
     @staticmethod
     def getChance():
         raise ValueError('Override me')
+
+    '''
+    Subclass and override
+
+    Expected: Surface representing that will
+    be displayed on the interface representing
+    the equation
+    '''
+    def getSurface(self):
+        raise ValueError('Override me')
+
+    '''
+    Check if the player's input is right
+    '''
+    def isCorrect(self, sltns):
+        return set(sltns.split()) == self.solutions
+
+    '''
+    Find how far the equation is to the base
+    '''
+    def getProgress(self):
+        return time.time() / (self.impact - self.spawn)
+
+    '''
+    Find where the enemy would be projected
+    '''
+    def getPos(self):
+        return int(self.getProgress() * self.gameResolution[0]), self.y
     
 class Level1(Enemy):
     '''
@@ -69,6 +118,8 @@ class Level1(Enemy):
     Example: x + 4 = 9
     Begins spawning at level 1
     '''
+
+    font = Font('freesansbold.ttf', 16)
     
     @staticmethod
     def generate(level):
@@ -84,11 +135,8 @@ class Level1(Enemy):
         return {x}, exps
 
     def getTime(self):
-        
-        time = -2 * self.level + 15
-        if level > 5:
-            time = 5
-        return time
+
+        return cap(-2 * self.level + 15, 5, None)
 
     def getValue(self):
         return 50
@@ -101,6 +149,13 @@ class Level1(Enemy):
             chance = 0
         return chance
 
+    def getSurface(self):
+
+        surf = ROCKET1.copy()
+        equation = self.font.render(self.equation, True, colors.white)
+        surf.blit(equation, (55, 25))
+        return surf
+
 class Level2(Enemy):
     '''
     A slightly more complex equation
@@ -108,24 +163,23 @@ class Level2(Enemy):
     Begins spawning at level 2
     '''
 
+    font = Font('freesansbold.ttf', 16)
+
     @staticmethod
     def generate(level):
         
         m, x, b, y = genL2()
         
         m = strCoeff(m)
-        b = strCoeff(b)
+        b = strAdd(b)
             
-        exps = ['{}x {}'.format(m, b), str(y)]
+        exps = ['{} {}'.format(m, b), str(y)]
 
         return {x}, exps
 
     def getTime(self):
-        
-        time = -(self.level - 1) + 25
-        if time < 10:
-            time = 10
-        return time
+
+        return cap(-(self.level - 1) + 25, 0, None)
 
     def getValue(self):
 
@@ -138,12 +192,21 @@ class Level2(Enemy):
             return 0
         return 150
 
+    def getSurface(self):
+
+        surf = ROCKET1.copy()
+        equation = self.font.render(self.equation, True, colors.white)
+        surf.blit(equation, (55, 25))
+        return surf
+
 class Level3(Enemy):
     '''
     A 'two-step' equation
     Example: 3x + 4 = 4x + 3
     Begins spawning at level 6
     '''
+
+    font = Font('freesansbold.ttf', 14)
 
     @staticmethod
     def generate(level):
@@ -164,10 +227,7 @@ class Level3(Enemy):
 
     def getTime(self):
 
-        time = -self.level + 30
-        if time < 15:
-            time = 15
-        return time
+        return cap(-self.level + 30, 15, None)
 
     def getValue(self):
 
@@ -178,17 +238,23 @@ class Level3(Enemy):
 
         if level < 6:
             return 0
-        chance = 5 * (level - 5)
-        if chance > 150:
-            chance = 150
-        return chance
+        return cap(5 * (level - 5), None, 150)
 
+    def getSurface(self):
+
+        surf = ROCKET2.copy()
+        equation = self.font.render(self.equation, True, colors.black)
+        surf.blit(equation, (64, 25))
+        return surf
+        
 class Level4(Enemy):
     '''
     A binomial factor pair
     Example: (3x + 2)(5x - 1) = 0
     Begins spawning at level 10
     '''
+
+    font = Font('freesansbold.ttf', 16)
 
     @staticmethod
     def generate(level):
@@ -222,12 +288,21 @@ class Level4(Enemy):
             chance = 200
         return chance
 
+    def getSurface(self):
+
+        surf = ROCKET3.copy()
+        equation = self.font.render(self.equation, True, colors.white)
+        surf.blit(equation, (125, 25))
+        return surf
+
 class Level5(Enemy):
     '''
     A trinomial
     Example: x^2 + 9x + 10 = -10
     Begins spawning at level 15
     '''
+
+    font = Font('freesansbold.ttf', 18)
 
     @staticmethod
     def generate(level):
@@ -239,7 +314,8 @@ class Level5(Enemy):
         if b2 == 0:
             b2 = random.randint(1, 10)
 
-        b, c = b1 + b2, b1 * b2
+        b = b1 + b2
+        c = b1 * b2
         
         b = strCoeffAdd(b)
         c = strAdd(c)
@@ -259,9 +335,15 @@ class Level5(Enemy):
         if level < 15:
             return 0
         chance = 25 * 1.10 ** (level - 15)
-        if chance > 200:
-            chance = 200
+
         return chance
+
+    def getSurface(self):
+
+        surf = ROCKET3.copy()
+        equation = self.font.render(self.equation, True, colors.white)
+        surf.blit(equation, (125, 25))
+        return surf
 
 def genL2():
     
@@ -322,6 +404,19 @@ def strAdd(n):
         n = ' + {}'.format(n)
     return n
 
+'''
+Cap a number to be greater than min but less than max
+Example: cap(20, 5, 10) = 10
+It's very well used if a mathematical function is put
+in the place of n.
+'''
+def cap(n, min=None, max=None):
+    if min != None and n < min:
+        return min
+    elif max != None and n > max:
+        return max
+    return n
+
 def factorsOf(n):
     for i in range(1, n):
         if n % i == 0:
@@ -329,10 +424,12 @@ def factorsOf(n):
     yield n
         
 def main():
-    e = Level5(1)
-    print(e.equation)
-    input()
-    print(e.solution)
+    pygame.init()
+    e = Level5(1, (640, 480))
+    d = pygame.display.set_mode((640, 480))
+    while True:
+        d.blit(e.getSurface(), (0, 128))
+        pygame.display.update()
     
 if __name__ == '__main__':
     main()
