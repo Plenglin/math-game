@@ -4,33 +4,23 @@ import time
 import pygame
 from pygame.font import Font
 
+import assets
 import colors
 
 pygame.init()
-
-rockets = pygame.image.load('assets/rockets.png')
-
-ROCKET1 = pygame.image.load('assets/rocket_1.png')
-ROCKET2 = pygame.image.load('assets/rocket_2.png')
-ROCKET3 = pygame.image.load('assets/rocket_3.png')
-
 
 class Enemy():
 
     level = 0
     equation = ''
     solution = {0}
-    gameResolution = (0, 0)
-    y = 0
 
     spawn = 0
     impact = 0
 
-    def __init__(self, level, resolution):
+    def __init__(self, level):
         
         self.level = level
-
-        self.gameResolution = resolution
         
         self.solution, expressions = self.generate(level)
         random.shuffle(expressions)
@@ -40,7 +30,7 @@ class Enemy():
         self.impact = self.spawn + self.getTime()
 
     def __str__(self):
-        return '{}; x = {}'.format(self.equation, self.solutions)
+        return '{}; x = {}'.format(self.equation, self.solution)
 
     '''
     Subclass and override
@@ -98,25 +88,23 @@ class Enemy():
     Check if the player's input is right
     '''
     def isCorrect(self, sltns):
-        return set(sltns.split()) == self.solutions
+        try:
+            return set(map(int, sltns.split())) == self.solution
+        except:
+            return False
 
     '''
     Find how far the equation is to the base
     '''
     def getProgress(self):
-        return time.time() / (self.impact - self.spawn)
-
-    '''
-    Find where the enemy would be projected
-    '''
-    def getPos(self):
-        return int(self.getProgress() * self.gameResolution[0]), self.y
+        return (time.time() - self.spawn) / (self.impact - self.spawn)
     
 class Level1(Enemy):
     '''
     A simple equation
     Example: x + 4 = 9
     Begins spawning at level 1
+    Stops spawning after level 3
     '''
 
     font = Font('freesansbold.ttf', 16)
@@ -144,14 +132,14 @@ class Level1(Enemy):
     @staticmethod
     def getChance(level):
         
-        chance = -10 * level + 100
-        if level > 10:
+        chance = -10 * (level - 1) + 100
+        if level > 3:
             chance = 0
         return chance
 
     def getSurface(self):
 
-        surf = ROCKET1.copy()
+        surf = assets.rocket1.copy()
         equation = self.font.render(self.equation, True, colors.white)
         surf.blit(equation, (55, 25))
         return surf
@@ -160,7 +148,7 @@ class Level2(Enemy):
     '''
     A slightly more complex equation
     Example: 3x + 2 = 5
-    Begins spawning at level 2
+    Begins spawning at level 1
     '''
 
     font = Font('freesansbold.ttf', 16)
@@ -187,14 +175,12 @@ class Level2(Enemy):
 
     @staticmethod
     def getChance(level):
-        
-        if level < 2:
-            return 0
+
         return 150
 
     def getSurface(self):
 
-        surf = ROCKET1.copy()
+        surf = assets.rocket1.copy()
         equation = self.font.render(self.equation, True, colors.white)
         surf.blit(equation, (55, 25))
         return surf
@@ -221,7 +207,7 @@ class Level3(Enemy):
         b1 = strAdd(b1)
         b2 = strAdd(b2)
 
-        exps = ['{}x {}'.format(m1, b1), '{}x {}'.format(m2, b2)]
+        exps = ['{} {}'.format(m1, b1), '{} {}'.format(m2, b2)]
 
         return {x}, exps
 
@@ -238,11 +224,11 @@ class Level3(Enemy):
 
         if level < 6:
             return 0
-        return cap(5 * (level - 5), None, 150)
+        return int(cap(5 * (level - 5), None, 150))
 
     def getSurface(self):
 
-        surf = ROCKET2.copy()
+        surf = assets.rocket2.copy()
         equation = self.font.render(self.equation, True, colors.black)
         surf.blit(equation, (64, 25))
         return surf
@@ -286,11 +272,12 @@ class Level4(Enemy):
         chance = 10 * 1.25 ** (level - 10)
         if chance > 200:
             chance = 200
-        return chance
+            
+        return int(chance)
 
     def getSurface(self):
 
-        surf = ROCKET3.copy()
+        surf = assets.rocket3.copy()
         equation = self.font.render(self.equation, True, colors.white)
         surf.blit(equation, (125, 25))
         return surf
@@ -307,12 +294,12 @@ class Level5(Enemy):
     @staticmethod
     def generate(level):
 
-        b1 = random.randint(-10, 10)
+        b1 = random.randint(-12, 11)
         if b1 == 0:
-            b1 = random.randint(1, 10)
-        b2 = random.randint(-10, 10)
+            b1 = 12
+        b2 = random.randint(-12, 11)
         if b2 == 0:
-            b2 = random.randint(1, 10)
+            b2 = 12
 
         b = b1 + b2
         c = b1 * b2
@@ -324,7 +311,7 @@ class Level5(Enemy):
     
     def getTime(self):
 
-        return 35 * 0.95 ** (self.level - 15) + 10
+        return 25 * 0.95 ** (self.level - 15) + 20
         
     def getValue(self):
 
@@ -336,18 +323,42 @@ class Level5(Enemy):
             return 0
         chance = 25 * 1.10 ** (level - 15)
 
-        return chance
+        return int(chance)
 
     def getSurface(self):
 
-        surf = ROCKET3.copy()
+        surf = assets.rocket3.copy()
         equation = self.font.render(self.equation, True, colors.white)
         surf.blit(equation, (125, 25))
         return surf
 
+
+class SpawnHandler():
+
+    level = 1
+    enemies = []
+    
+    def __init__(self, *enemies):
+        self.enemies = enemies
+
+    def levelUp(self):
+        self.level += 1
+
+    def spawnchoices(self):
+        chips = []
+        for enemy in self.enemies:
+            for chip in range(0, enemy.getChance(self.level)):
+                chips.append(enemy)
+        return chips
+
+    def spawn(self):
+        return random.choice(self.spawnchoices())(self.level)
+
 def genL2():
     
-    x = random.randint(-10, 10)
+    x = random.randint(-12, 11)
+    if x == 0:
+        x = 12
     
     m = random.randint(-10, 9)
     if m == 0:
@@ -407,7 +418,7 @@ def strAdd(n):
 '''
 Cap a number to be greater than min but less than max
 Example: cap(20, 5, 10) = 10
-It's very well used if a mathematical function is put
+It's best used if a mathematical function is put
 in the place of n.
 '''
 def cap(n, min=None, max=None):
