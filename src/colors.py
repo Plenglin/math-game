@@ -6,7 +6,7 @@ from pygame import Color
 import pygame
 
 
-# Named colors   R    G    B
+# Named colors        R    G    B    A
 black       = Color(  0,   0,   0, 255)
 white       = Color(255, 255, 255, 255)
 red         = Color(255,   0,   0, 255)
@@ -22,6 +22,9 @@ light_blue  = Color(  0, 128, 255, 255)
 orange      = Color(255, 128,   0, 255)
 tan         = Color(210, 180, 140, 255)
 navy_blue   = Color(  0,   0,  92, 255)
+
+def random():
+    return Color(randint(0, 255), randint(0, 255), randint(0, 255), 255)
 
 def gray(percent):
     '''0 is white, 100 is black'''

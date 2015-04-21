@@ -112,8 +112,10 @@ class Level1(Enemy):
     @staticmethod
     def generate(level):
         
-        x = random.randint(-50, 50)
-        b = random.randint(-50, 50)
+        x = random.randint(-25, 24)
+        b = random.randint(-25, 24)
+        if b == 0:
+            b = 25
         y = x + b
         
         b = strAdd(b)
@@ -141,7 +143,7 @@ class Level1(Enemy):
 
         surf = assets.rocket1.copy()
         equation = self.font.render(self.equation, True, colors.white)
-        surf.blit(equation, (55, 25))
+        surf.blit(equation, (50, 25))
         return surf
 
 class Level2(Enemy):
@@ -332,28 +334,6 @@ class Level5(Enemy):
         surf.blit(equation, (125, 25))
         return surf
 
-
-class SpawnHandler():
-
-    level = 1
-    enemies = []
-    
-    def __init__(self, *enemies):
-        self.enemies = enemies
-
-    def levelUp(self):
-        self.level += 1
-
-    def spawnchoices(self):
-        chips = []
-        for enemy in self.enemies:
-            for chip in range(0, enemy.getChance(self.level)):
-                chips.append(enemy)
-        return chips
-
-    def spawn(self):
-        return random.choice(self.spawnchoices())(self.level)
-
 def genL2():
     
     x = random.randint(-12, 11)
@@ -435,12 +415,7 @@ def factorsOf(n):
     yield n
         
 def main():
-    pygame.init()
-    e = Level5(1, (640, 480))
-    d = pygame.display.set_mode((640, 480))
-    while True:
-        d.blit(e.getSurface(), (0, 128))
-        pygame.display.update()
+    pass
     
 if __name__ == '__main__':
     main()
