@@ -6,8 +6,10 @@ from pygame.font import Font
 
 import assets
 import colors
+import sprites
 
 pygame.init()
+
 
 class Enemy():
 
@@ -85,6 +87,21 @@ class Enemy():
         raise ValueError('Override me')
 
     '''
+    Subclass and override
+
+    Expected: sprites.Animation of the explosion
+    left behind when it is destroyed
+    '''
+    def getExplosion(self):
+        raise ValueError('Override me')
+
+    '''
+    Get the rectangle
+    '''
+    def getRect(self):
+        return self.getSurface().get_rect()
+
+    '''
     Check if the player's input is right
     '''
     def isCorrect(self, sltns):
@@ -125,7 +142,6 @@ class Level1(Enemy):
         return {x}, exps
 
     def getTime(self):
-
         return cap(-2 * self.level + 15, 5, None)
 
     def getValue(self):
@@ -145,6 +161,9 @@ class Level1(Enemy):
         equation = self.font.render(self.equation, True, colors.white)
         surf.blit(equation, (50, 25))
         return surf
+
+    def getExplosion(self):
+        return sprites.spriteAnimation(assets.explosion2, 24)
 
 class Level2(Enemy):
     '''
@@ -186,6 +205,9 @@ class Level2(Enemy):
         equation = self.font.render(self.equation, True, colors.white)
         surf.blit(equation, (55, 25))
         return surf
+
+    def getExplosion(self):
+        return sprites.spriteAnimation(assets.explosion2, 24)
 
 class Level3(Enemy):
     '''
@@ -234,6 +256,9 @@ class Level3(Enemy):
         equation = self.font.render(self.equation, True, colors.black)
         surf.blit(equation, (64, 25))
         return surf
+
+    def getExplosion(self):
+        return sprites.spriteAnimation(assets.explosion1, 60)
         
 class Level4(Enemy):
     '''
@@ -284,6 +309,9 @@ class Level4(Enemy):
         surf.blit(equation, (125, 25))
         return surf
 
+    def getExplosion(self):
+        return sprites.spriteAnimation(assets.explosion1, 60)
+
 class Level5(Enemy):
     '''
     A trinomial
@@ -333,6 +361,9 @@ class Level5(Enemy):
         equation = self.font.render(self.equation, True, colors.white)
         surf.blit(equation, (125, 25))
         return surf
+
+    def getExplosion(self):
+        return sprites.spriteAnimation(assets.explosion1, 60)
 
 def genL2():
     

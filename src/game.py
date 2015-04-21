@@ -35,8 +35,29 @@ class Game():
         )
         gui = GUI(self)
 
-    def update(self):
-        self.player.getSelected()
+    '''
+    The update and draw functions meshed together
+    '''    
+    def updateGetSurface(self):
+        
+        surf = pygame.Surface(self.resolution)
+        surf.fill(colors.white)
+        surf.blit(self.enemy.getSurface(), (0, 0))
+        
+        for abm in self.player.abms:
+            surf.blit(assets.abm, abm.getPos())
+            if abm.hasArrived():
+                self.enemy.explode(abm.enemy, abm.y)
+                self.player.abms.remove(abm)
+
+        for e, p in self.enemy.explosions:
+            rect = e.getRect()
+            rect.center = p
+            surf.blit(e.getSurface(), rect)
+            if e.isFinished():
+                self.enemy.explosions.remove((e, p))
+        
+        return surf
 
     def getLabelFormat(self):
         return {
@@ -50,25 +71,53 @@ class Game():
 class Player():
     '''
     Player handler class. Handles the player's variables
-    and lasers.
+    and ABMs.
     '''
 
     hp = 10
     score = 0
     answer = ''
     game = None
-    lasers = []
+    abms = []
 
     def __init__(self, gameInstance):
         self.game = gameInstance
         self.lasers = [] # Prevent them from linking
 
+    class ABM():
+        
+        speed = 250
+        player = None
+        target = 0
+        enemy = None
+        y = 0
+        start = 0
+        
+        def __init__(self, player, target, e, y):
+            self.player = player
+            self.target = target
+            self.enemy = e
+            self.y = y
+            self.start = time.time()
+
+        def getX(self):
+            elapsed = time.time() - self.start
+            return self.player.game.resolution[0] - self.speed * elapsed
+
+        def hasArrived(self):
+            return self.getX() <= self.target
+
+        def getPos(self):
+            return (self.getX(), self.y)
+            
     def isCorrect(self):
         e, y = self.getSelected()
         if e.isCorrect(self.answer):
-            self.game.enemy.enemies.remove((e, y))
-            self.lasers.append((colors.random(), time.time()))
-
+            rect = e.getSurface().get_rect()
+            x = self.game.enemy.getX(e)
+            rect.topright = (x, y)
+            self.abms.append(Player.ABM(self, rect.right, e, y))
+    
     def getSelected(self):
         w, h = self.game.resolution
         for e, y in self.game.enemy.enemies:
@@ -98,7 +147,6 @@ class EnemyManager():
         self.available = availableEnemies
         self.enemies = [] # Prevent them from linking
         self.explosions = []
-        print(self.available)
 
     def spawnchoices(self):
         chips = []
@@ -141,6 +189,14 @@ class EnemyManager():
             if e.getProgress() >= 1:
                 self.enemies.remove(e)
                 self.game.player.hp -= 2
+
+    def explode(self, e, y):
+        rect = e.getRect()
+        rect.topright = (self.getX(e), y)
+        exp = e.getExplosion()
+        exp.start()
+        self.explosions.append((exp, rect.midright))
+        self.enemies.remove((e, y))
 
 class GUI():
 
@@ -210,10 +266,8 @@ def main():
         if game.enemy.canSpawn():
             game.enemy.spawn()
 
-        game.update()
-
         game.display.fill(colors.white)
-        game.display.blit(game.enemy.getSurface(), (0, 0))
+        game.display.blit(game.updateGetSurface(), (0, 0))
         pygame.display.update()
         
 if __name__ == '__main__':

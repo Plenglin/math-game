@@ -1,9 +1,11 @@
 '''
-    Human-readable colors
+Human-readable colors
 '''
 
-from pygame import Color
+from random import randint
+
 import pygame
+from pygame import Color
 
 
 # Named colors        R    G    B    A
