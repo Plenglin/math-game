@@ -20,7 +20,9 @@ class Enemy():
     spawn = 0
     impact = 0
 
-    def __init__(self, level):
+    y = 0
+
+    def __init__(self, level, y):
         
         self.level = level
         
@@ -30,6 +32,8 @@ class Enemy():
 
         self.spawn = time.time()
         self.impact = self.spawn + self.getTime()
+
+        self.y = y
 
     def __str__(self):
         return '{}; x = {}'.format(self.equation, self.solution)
@@ -163,7 +167,7 @@ class Level1(Enemy):
         return surf
 
     def getExplosion(self):
-        return sprites.spriteAnimation(assets.explosion2, 24)
+        return sprites.spriteAnimation(assets.explosion1, 24)
 
 class Level2(Enemy):
     '''
@@ -207,7 +211,7 @@ class Level2(Enemy):
         return surf
 
     def getExplosion(self):
-        return sprites.spriteAnimation(assets.explosion2, 24)
+        return sprites.spriteAnimation(assets.explosion1, 24)
 
 class Level3(Enemy):
     '''
@@ -258,7 +262,7 @@ class Level3(Enemy):
         return surf
 
     def getExplosion(self):
-        return sprites.spriteAnimation(assets.explosion1, 60)
+        return sprites.spriteAnimation(assets.explosion2, 60)
         
 class Level4(Enemy):
     '''
@@ -310,7 +314,7 @@ class Level4(Enemy):
         return surf
 
     def getExplosion(self):
-        return sprites.spriteAnimation(assets.explosion1, 60)
+        return sprites.spriteAnimation(assets.explosion3, 60)
 
 class Level5(Enemy):
     '''
@@ -363,7 +367,7 @@ class Level5(Enemy):
         return surf
 
     def getExplosion(self):
-        return sprites.spriteAnimation(assets.explosion1, 60)
+        return sprites.spriteAnimation(assets.explosion3, 60)
 
 def genL2():
     

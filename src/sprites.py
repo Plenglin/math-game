@@ -67,7 +67,7 @@ def main():
     import assets
     pygame.init()
     d = pygame.display.set_mode((640, 480))
-    explosionAnimation = spriteAnimation(assets.explosion1, 24)
+    explosionAnimation = spriteAnimation(assets.explosion3, 30)
     explosionAnimation.start()
     while True:
         d.fill(colors.white)
