@@ -44,9 +44,9 @@ class Animation():
         return frame
 
     def getSurface(self):
-        if not self.isFinished():
+        try:
             return self.frames[self.getFrame()]
-        else:
+        except IndexError:
             return self.frames[self.getFrames() - 1]
 
     def isFinished(self):

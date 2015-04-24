@@ -11,6 +11,7 @@ import sprites
 
 
 pgrsFont = pygame.font.Font('freesansbold.ttf', 12)
+abmlFont = pygame.font.Font('freesansbold.ttf', 20)
 
 class Game():
     '''
@@ -48,18 +49,23 @@ class Game():
     def updateGetSurface(self):
 
         w, h = self.resolution
+        screenrect = pygame.Rect(0, 0, w, h)
+        mx, my = pygame.mouse.get_pos()
 
-        self.player.score = int((time.time() - self.start) * 100) # FOR TEST ONLY
+        #self.player.score = int((time.time() - self.start) * 100) # FOR TEST ONLY
         
         surf = pygame.Surface(self.resolution)
         surf.fill(colors.white)
+
+        bgRect = assets.background.get_rect()
+        bgRect.midright = screenrect.midright
+        surf.blit(assets.background, bgRect)
+        
         surf.blit(self.enemy.getSurface(), (0, 0))
         
         for abm in self.player.abms:
-            surf.blit(assets.abm, abm.getPos())
+            surf.blit(abm.getSurface(), abm.getPos())
             if abm.hasArrived():
-                if abm.correct:
-                    self.enemy.explode(abm.enemy)
                 abm.explode()
 
         for e, p in self.explosions:
@@ -69,6 +75,35 @@ class Game():
             if e.isFinished():
                 self.explosions.remove((e, p))
 
+        for e in self.enemy:
+            if e.getProgress() >= 1:
+                e.explode()
+                self.player.hp -= 1
+            elif e.canExplode():
+                e.explode()
+
+        if self.player.hp == 0:
+            raise Exception()
+
+        abml = None
+        if self.player.lastMouseY == my:
+            abml = self.player.lastABML
+        elif self.player.lastMouseY < my:
+            abml = assets.abmLauncherDown.copy()
+        elif self.player.lastMouseY > my:
+            abml = assets.abmLauncherUp.copy()
+        self.player.lastABML = abml.copy()
+
+        abml = self.player.getABML()
+        abmlRect = abml.get_rect()
+        abmlRect.midright = (w, my)
+
+        abmlText = abmlFont.render(self.player.getAnswer(), True, colors.white)
+        abmlTextRect = abmlText.get_rect()
+        abmlTextRect.center = abmlRect.center
+
+        surf.blit(abml, abmlRect)
+        surf.blit(abmlText, abmlTextRect)
         surf.blit(self.player.getGUI(), (0, 0))
         
         return surf
@@ -89,8 +124,9 @@ class Game():
                 elif event.key == pygame.K_BACKSPACE:
                     game.player.answer = game.player.answer[:-1]
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1 and game.player.getSelected() != None:
+                if event.button == 1 and game.player.canLaunch():
                     game.player.launch()
+                    game.player.negative = False
 
         if not pygame.mixer.get_busy():
             game.channel.queue(assets.loop1)
@@ -117,73 +153,57 @@ class Player():
     and ABMs.
     '''
 
-    hp = 10
-    totalhp = 10
-    score = 100
+    hp = 5
+    totalhp = 5
+    score = 0
     answer = ''
     negative = False
     game = None
     abms = []
-    lastFired = 0
+    combo = 1
+    
+    lastMouseY = 0
+    lastABML = None
+    abmh = None
 
     def __init__(self, gameInstance):
         self.game = gameInstance
         self.lasers = [] # Prevent them from linking
+        self.lastABML = assets.abmLauncherUp.copy()
+        self.abmh = self.getABMHolder()
+        self.abmh.start()
 
-    class ABM():
-        
-        speed = 250
-        player = None
-        correct = False
-        target = 0
-        enemy = None
-        y = 0
-        start = 0
-        
-        def __init__(self, player, e, target):
-            self.player = player
-            self.correct = player.isCorrect()
-            self.enemy = e
-            self.target = target
-            self.y = e.y
-            self.start = time.time()
+    def getABMHolder(self):
+        seconds = 2 * (0.9)**self.getLevel() + 3
+        return sprites.spriteAnimation(assets.abmHolder, 18 / seconds)
 
-        def __repr__(self):
-            template = 'Player.ABM(target={},x={},hasArrived={})'
-            return template.format(self.target, self.getX(), self.hasArrived())
+    def getABML(self):
+        s = pygame.Surface((64, 64), pygame.SRCALPHA, 32)
+        s.blit(self.lastABML, (0, 0))
+        s.blit(self.abmh.getSurface(), (0, 0))
+        return s
 
-        def getX(self):
-            elapsed = time.time() - self.start
-            return int(self.player.game.resolution[0] - self.speed * elapsed)
-
-        def hasArrived(self):
-            return self.getX() <= self.target
-
-        def getPos(self):
-            return (self.getX(), self.y)
-
-        def explode(self):
-            explosion = None
-            if self.correct:
-                explosion = sprites.spriteAnimation(assets.explosionABMS, 30)
-            else:
-                explosion = sprites.spriteAnimation(assets.explosionABMF, 30)
-            explosion.start()
-            self.player.game.explosions.append((explosion, self.getPos()))
-            self.player.abms.remove(self)
+    def canLaunch(self):
+        return self.abmh.isFinished() and self.getSelected() != None
 
     def launch(self):
         e = self.getSelected()
-        if e != None:
+        if self.canLaunch():
             rect = e.getRect()
             x = self.game.enemy.getX(e)
             rect.topright = (x, e.y)
-            self.abms.append(Player.ABM(self, e, rect.right))
+            self.abms.append(ABM(self, self.getAnswer(), e, rect.right))
             self.answer = ''
             self.isNegative = False
+            self.abmh.start()
+        else:
+            raise Exception('Cannot launch')
 
     def getAnswer(self):
-        return ('-' if self.negative else '') + self.answer
+        neg = '-' if self.negative else ''
+        if self.answer == '':
+            return ''
+        return neg + self.answer
             
     def isCorrect(self):
         return self.getSelected().isCorrect(self.getAnswer())     
@@ -201,6 +221,9 @@ class Player():
     def getGUI(self):
 
         w, h = self.game.resolution
+
+        mx, my = pygame.mouse.get_pos()
+        self.lastMouseY = my
         
         gui = pygame.Surface(self.game.resolution, pygame.SRCALPHA, 32)
         
@@ -211,14 +234,14 @@ class Player():
         hpBar = pgrsBar(
             self.hp / self.totalhp,
             hpBarRect,
-            colors.blue, colors.navy_blue
+            colors.pink, colors.navy_blue
         )
 
         hpText = pgrsFont.render('{}/{} lives'.format(self.hp, self.totalhp), True, colors.white)
         hpTextRect = hpText.get_rect()
         hpTextRect.center = hpBarRect.center
 
-        timerText = pgrsFont.render(secToMS(int(time.time() - self.game.start)), True, colors.black)
+        timerText = pgrsFont.render(secToMS(int(time.time() - self.game.start)), True, colors.white)
         timerRect = timerText.get_rect()
         timerRect.midright = hpBarRect.midleft
 
@@ -230,13 +253,18 @@ class Player():
             colors.red, colors.orange
         )
         
-        scoreText = pgrsFont.render('{} pts'.format(self.score), True, colors.black)
+        scoreText = pgrsFont.render('{} pts'.format(self.score), True, colors.orange)
         scoreRect = scoreText.get_rect()
         scoreRect.midright = scoreToNextRect.midleft
 
         levelText = pgrsFont.render('Level {}'.format(self.getLevel()), True, colors.black)
         levelRect = levelText.get_rect()
         levelRect.center = scoreToNextRect.center
+
+        combo = 'x{}' if self.combo > 1 else ''
+        comboText = pgrsFont.render(combo.format(self.combo), True, colors.white)
+        comboRect = comboText.get_rect()
+        comboRect.midleft = scoreToNextRect.midright
         
         gui.blit(hpBar, hpBarRect)
         gui.blit(hpText, hpTextRect)
@@ -244,19 +272,20 @@ class Player():
         gui.blit(scoreToNextBar, scoreToNextRect)
         gui.blit(scoreText, scoreRect)
         gui.blit(levelText, levelRect)
+        gui.blit(comboText, comboRect)
 
         return gui.convert_alpha()
 
     @staticmethod
     def ptsToLevel(level):
-        return 25 * level**2 - 25 * level # Level 2: 50, increases by 25
+        return 75 * level**2 + 75 * level # Level 2: 150, increases by 150
 
     @staticmethod
     def ptsBetweenLevels(l1, l2):
         return abs(Player.ptsToLevel(l1) - Player.ptsToLevel(l2))
     
     def getLevel(self):
-        lvl = enemy.cap(((625 + 100*self.score)**0.5 + 25) / 50, 1, None)
+        lvl = enemy.cap(((5265 + 300*self.score)**0.5 + 75) / 150, 1, None)
         lvl = lvl - lvl % 1
         return int(lvl)
 
@@ -273,7 +302,69 @@ class Player():
         ptsAfterLast = self.score - ptsToLast
         total = Player.ptsBetweenLevels(self.getLevel(), nextLevel)
         return ptsAfterLast / total
+
+class ABM():
         
+    speed = 250
+    player = None
+    correct = False
+    target = 0
+    enemy = None
+    y = 0
+    start = 0
+    ans = 0
+    
+    def __init__(self, player, ans, e, target):
+        self.player = player
+        self.ans = ans
+        self.correct = player.isCorrect()
+        self.enemy = e
+        self.target = target
+        self.y = e.y
+        self.start = time.time()
+
+    def __repr__(self):
+        template = 'Player.ABM(target={},x={},hasArrived={})'
+        return template.format(self.target, self.getX(), self.hasArrived())
+
+    def getX(self):
+        elapsed = time.time() - self.start
+        return int(self.player.game.resolution[0] - self.speed * elapsed)
+
+    def hasArrived(self):
+        return self.getX() <= self.target
+
+    def getPos(self):
+        return (self.getX(), self.y)
+
+    def getSurface(self):
+        s = assets.abm.copy()
+        srect = s.get_rect()
+        t = abmlFont.render(str(self.ans), True, colors.gray(50))
+        trect = t.get_rect()
+        trect.center = srect.center
+        s.blit(t, trect)
+        return s
+
+    def explode(self):
+        explosion = None
+        if self.correct:
+            explosion = sprites.spriteAnimation(assets.explosionABMS, 30)
+            s = []
+            a = int(self.ans)
+            for i in self.enemy.solution:
+                if i != a:
+                    s.append(i)
+            self.enemy.solution = s
+            self.player.abmh = self.player.getABMHolder()
+            self.player.score += self.enemy.getValue() * self.player.combo
+            self.player.combo += 1
+        else:
+            explosion = sprites.spriteAnimation(assets.explosionABMF, 30)
+            self.player.combo = 1
+        explosion.start()
+        self.player.game.explosions.append((explosion, self.getPos()))
+        self.player.abms.remove(self)
         
 class EnemyManager():
     '''
@@ -290,6 +381,10 @@ class EnemyManager():
         self.available = availableEnemies
         self.enemies = [] # Prevent them from linking
 
+    def __iter__(self):
+        for e in self.enemies:
+            yield e
+
     def spawnchoices(self):
         chips = []
         for enemy in self.available:
@@ -299,7 +394,7 @@ class EnemyManager():
         return chips
 
     def canSpawn(self):
-        return time.time() > self.nextSpawn() or self.enemies == []
+        return time.time() > self.nextSpawn() or len(self.enemies) == 0
             
     def nextSpawn(self):
         return self.lastSpawn + self.game.player.getLevel() + 10
@@ -307,7 +402,7 @@ class EnemyManager():
     def spawn(self):
         w, h = self.game.resolution
         ToSpawn = choice(self.spawnchoices())
-        e = ToSpawn(self.game.player.getLevel(), randint(0, h - 64))
+        e = ToSpawn(self, randint(0, h - 64))
         self.enemies.append(e)
         self.lastSpawn = time.time()
 
@@ -329,21 +424,15 @@ class EnemyManager():
         for e in self.enemies:
             if e.getProgress() >= 1:
                 self.enemies.remove(e)
-                self.game.player.hp -= 2
-
-    def explode(self, e):
-        rect = e.getRect()
-        rect.topright = (self.getX(e), e.y)
-        exp = e.getExplosion()
-        exp.start()
-        self.game.explosions.append((exp, rect.midright))
-        self.enemies.remove(e)
-        
+                self.game.player.hp -= 2        
 
 def pgrsBar(progress, rect, fgColor, bgColor):
     surf = pygame.Surface(rect.size)
     surf.fill(bgColor)
-    pgrs = pygame.Rect(0, 0, int(rect.w * progress), rect.h)
+    if progress > 0:
+        pgrs = pygame.Rect(1, 1, int(rect.w * progress) - 2, rect.h - 2)
+    else:
+        pgrs = pygame.Rect(0, 0, 0, 0)
     pygame.draw.rect(surf, fgColor, pgrs)
     return surf
 

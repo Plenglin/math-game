@@ -15,18 +15,21 @@ class Enemy():
 
     level = 0
     equation = ''
-    solution = {0}
+    solution = [0]
+    manager = None
 
     spawn = 0
     impact = 0
 
     y = 0
 
-    def __init__(self, level, y):
+    def __init__(self, enemyInstance, y):
+
+        self.manager = enemyInstance
         
-        self.level = level
+        self.level = self.manager.game.player.getLevel()
         
-        self.solution, expressions = self.generate(level)
+        self.solution, expressions = self.generate(self.level)
         random.shuffle(expressions)
         self.equation = ' = '.join(expressions)
 
@@ -41,7 +44,7 @@ class Enemy():
     '''
     Subclass and override
 
-    Expected: {int} solution(s) and [str, str]
+    Expected: [int] solution(s) and [str, str]
     expressions that equal each other
     NOTE: This is STATIC and should be called from
     the CLASS!
@@ -108,9 +111,9 @@ class Enemy():
     '''
     Check if the player's input is right
     '''
-    def isCorrect(self, sltns):
+    def isCorrect(self, ans):
         try:
-            return set(map(int, sltns.split())) == self.solution
+            return int(ans) in self.solution
         except:
             return False
 
@@ -119,6 +122,23 @@ class Enemy():
     '''
     def getProgress(self):
         return (time.time() - self.spawn) / (self.impact - self.spawn)
+
+    '''
+    See if it can explode yet
+    '''
+    def canExplode(self):
+        return len(self.solution) == 0
+
+    '''
+    Blow up
+    '''
+    def explode(self):
+        rect = self.getRect()
+        rect.topright = (self.manager.getX(self), self.y)
+        exp = self.getExplosion()
+        exp.start()
+        self.manager.game.explosions.append((exp, rect.midright))
+        self.manager.enemies.remove(self)
     
 class Level1(Enemy):
     '''
@@ -143,7 +163,7 @@ class Level1(Enemy):
 
         exps = ['x {}'.format(b), str(y)]
 
-        return {x}, exps
+        return [x], exps
 
     def getTime(self):
         return cap(-2 * self.level + 15, 5, None)
@@ -188,11 +208,11 @@ class Level2(Enemy):
             
         exps = ['{} {}'.format(m, b), str(y)]
 
-        return {x}, exps
+        return [x], exps
 
     def getTime(self):
 
-        return cap(-(self.level - 1) + 25, 0, None)
+        return cap(-(self.level - 1) + 25, 15, None)
 
     def getValue(self):
 
@@ -237,11 +257,11 @@ class Level3(Enemy):
 
         exps = ['{} {}'.format(m1, b1), '{} {}'.format(m2, b2)]
 
-        return {x}, exps
+        return [x], exps
 
     def getTime(self):
 
-        return cap(-self.level + 30, 15, None)
+        return cap(-self.level + 40, 20, None)
 
     def getValue(self):
 
@@ -285,7 +305,7 @@ class Level4(Enemy):
         
         equation = '({}{})({}{})'.format(m1, b1, m2, b2)
         
-        return {x1, x2}, [equation, '0']
+        return [x1, x2], [equation, '0']
 
     def getTime(self):
 
@@ -308,7 +328,7 @@ class Level4(Enemy):
 
     def getSurface(self):
 
-        surf = assets.rocket3.copy()
+        surf = (assets.rocket3_2 if len(self.solution) == 2 else assets.rocket3_1).copy()
         equation = self.font.render(self.equation, True, colors.white)
         surf.blit(equation, (125, 25))
         return surf
@@ -341,7 +361,7 @@ class Level5(Enemy):
         b = strCoeffAdd(b)
         c = strAdd(c)
         
-        return {b1, b2}, ['x^2{}{}'.format(b, c), '0']
+        return [b1, b2], ['x^2{}{}'.format(b, c), '0']
     
     def getTime(self):
 
@@ -361,7 +381,7 @@ class Level5(Enemy):
 
     def getSurface(self):
 
-        surf = assets.rocket3.copy()
+        surf = (assets.rocket3_2 if len(self.solution) == 2 else assets.rocket3_1).copy()
         equation = self.font.render(self.equation, True, colors.white)
         surf.blit(equation, (125, 25))
         return surf
