@@ -145,7 +145,7 @@ class Level1(Enemy):
     A simple equation
     Example: x + 4 = 9
     Begins spawning at level 1
-    Stops spawning after level 3
+    Stops spawning after level 5
     '''
 
     font = Font('freesansbold.ttf', 16)
@@ -166,7 +166,7 @@ class Level1(Enemy):
         return [x], exps
 
     def getTime(self):
-        return cap(-2 * self.level + 15, 5, None)
+        return cap(-self.level + 20, 5, None)
 
     def getValue(self):
         return 50
@@ -175,7 +175,7 @@ class Level1(Enemy):
     def getChance(level):
         
         chance = -10 * (level - 1) + 100
-        if level > 3:
+        if level > 5:
             chance = 0
         return chance
 
@@ -212,7 +212,7 @@ class Level2(Enemy):
 
     def getTime(self):
 
-        return cap(-(self.level - 1) + 25, 15, None)
+        return cap(-(self.level - 1) + 30, 20, None)
 
     def getValue(self):
 

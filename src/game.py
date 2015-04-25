@@ -1,6 +1,6 @@
 import sys
 import time
-from random import choice, randint
+from random import choice, randint, random
 
 import pygame
 
@@ -29,10 +29,10 @@ class Game():
 
     explosions = []
     
-    def __init__(self, resolution):
+    def __init__(self, display):
         self.start = time.time()
-        self.resolution = resolution
-        self.display = pygame.display.set_mode(resolution)
+        self.resolution = display.get_size()
+        self.display = display
         pygame.display.set_caption('Solve or Die')
         self.channel = pygame.mixer.Channel(0)
         self.channel.queue(assets.loop1)
@@ -79,6 +79,7 @@ class Game():
             if e.getProgress() >= 1:
                 e.explode()
                 self.player.hp -= 1
+                self.player.combo = 1
             elif e.canExplode():
                 e.explode()
 
@@ -174,8 +175,7 @@ class Player():
         self.abmh.start()
 
     def getABMHolder(self):
-        seconds = 2 * (0.9)**self.getLevel() + 3
-        return sprites.spriteAnimation(assets.abmHolder, 18 / seconds)
+        return sprites.spriteAnimation(assets.abmHolder, 6)
 
     def getABML(self):
         s = pygame.Surface((64, 64), pygame.SRCALPHA, 32)
@@ -184,7 +184,7 @@ class Player():
         return s
 
     def canLaunch(self):
-        return self.abmh.isFinished() and self.getSelected() != None
+        return self.abmh.isFinished() and self.getSelected() != None and self.answer != ''
 
     def launch(self):
         e = self.getSelected()
@@ -276,31 +276,33 @@ class Player():
 
         return gui.convert_alpha()
 
-    @staticmethod
-    def ptsToLevel(level):
-        return 75 * level**2 + 75 * level # Level 2: 150, increases by 150
+    def ptsToLevel(self, level):
+        a = 75
+        b = -75
+        lvl = a*level**2 + b*level
+        return lvl
 
-    @staticmethod
-    def ptsBetweenLevels(l1, l2):
-        return abs(Player.ptsToLevel(l1) - Player.ptsToLevel(l2))
+    def ptsBetweenLevels(self, l1, l2):
+        return abs(self.ptsToLevel(l1) - self.ptsToLevel(l2))
     
     def getLevel(self):
-        lvl = enemy.cap(((5265 + 300*self.score)**0.5 + 75) / 150, 1, None)
-        lvl = lvl - lvl % 1
+        a = 75
+        b = -75
+        lvl = ((5625 + 300*self.score)**0.5 + 75) / 150
         return int(lvl)
 
     def getScoreToNext(self):
         nextLevel = self.getLevel() + 1
-        ptsToLast = Player.ptsToLevel(self.getLevel())
+        ptsToLast = self.ptsToLevel(self.getLevel())
         ptsAfterLast = self.score - ptsToLast
-        total = Player.ptsBetweenLevels(self.getLevel(), nextLevel)
+        total = self.ptsBetweenLevels(self.getLevel(), nextLevel)
         return total - ptsAfterLast
 
     def getPgrsToNext(self):
         nextLevel = self.getLevel() + 1
-        ptsToLast = Player.ptsToLevel(self.getLevel())
+        ptsToLast = self.ptsToLevel(self.getLevel())
         ptsAfterLast = self.score - ptsToLast
-        total = Player.ptsBetweenLevels(self.getLevel(), nextLevel)
+        total = self.ptsBetweenLevels(self.getLevel(), nextLevel)
         return ptsAfterLast / total
 
 class ABM():
@@ -358,7 +360,10 @@ class ABM():
             self.enemy.solution = s
             self.player.abmh = self.player.getABMHolder()
             self.player.score += self.enemy.getValue() * self.player.combo
+            lastcombo = self.player.combo
             self.player.combo += 1
+            if self.player.combo % 10 == 0:
+                self.player.hp += 1
         else:
             explosion = sprites.spriteAnimation(assets.explosionABMF, 30)
             self.player.combo = 1
@@ -448,7 +453,9 @@ def main():
     
     pygame.init()
 
-    game = Game((640, 480))
+    d = pygame.display.set_mode((640, 480))
+
+    game = Game(d)
 
     while True:
         game.mainLoop()

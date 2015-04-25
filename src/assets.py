@@ -1,10 +1,12 @@
 import random
 
 import pygame
+import pygame.camera
 
 import sprites
 
 pygame.init()
+pygame.camera.init()
 
 def loadImg(file):
     return pygame.image.load('assets/sprites/{}.png'.format(file))
@@ -22,15 +24,16 @@ abmLauncherDown = pygame.transform.flip(abmLauncherUp, False, True)
 abmHolder = loadImg('abm-holder')
 city = loadImg('fnyc')
 background = pygame.transform.rotozoom(city, 90, 0.5)
-rocket1 = loadImg('rocket-1')
-rocket2 = loadImg('rocket-2')
-rocket3_1 = loadImg('rocket-3-hp1')
-rocket3_2 = loadImg('rocket-3-hp2')
 explosion1 = loadImg('explosion-r1')
 explosion2 = loadImg('explosion-r2')
 explosion3 = loadImg('explosion-r3')
 explosionABMS = loadImg('explosion-abm-success')
 explosionABMF = loadImg('explosion-abm-failure')
+title = pygame.transform.rotozoom(loadImg('title'), 0, 2)
+rocket1 = loadImg('rocket-1')
+rocket2 = loadImg('rocket-2')
+rocket3_1 = loadImg('rocket-3-hp1')
+rocket3_2 = loadImg('rocket-3-hp2')
 
 loop1 = loadSound('solve-or-die-loop')
 

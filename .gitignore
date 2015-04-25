@@ -55,3 +55,7 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# Game-generated files
+src/highscores.json
+src/he-who-alt-f4s.png
