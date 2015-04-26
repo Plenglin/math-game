@@ -8,12 +8,16 @@ import pygame
 import assets
 import colors
 import enemy
+import game
 import title
 
 
 _cameras = pygame.camera.list_cameras()
 cam = pygame.camera.Camera(_cameras[0], (640, 480), 'RGB')
 cam.start()
+
+class LevelFinished(Exception):
+    pass
 
 def init():
     highscores = None
@@ -32,6 +36,7 @@ def init():
     pygame.init()
     pygame.display.set_caption("Math Game")
     display = pygame.display.set_mode((1280, 1024), pygame.FULLSCREEN)
+    cam.get_image()
     return display
 
 def bust():
@@ -46,7 +51,17 @@ def terminate():
 
 def main():
     d = init()
-    title.startscreen(d)
+    cam.get_image()
+    while True:
+        try:
+            title.startscreen(d)
+        except:
+            pass
+        try:
+            game.initGame(d)
+        except LevelFinished:
+            pass
+        
 
 if __name__ == '__main__':
     main()

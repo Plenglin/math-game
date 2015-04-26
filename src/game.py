@@ -7,11 +7,13 @@ import pygame
 import assets
 import colors
 import enemy
+import gameover
 import sprites
 
 
 pgrsFont = pygame.font.Font('freesansbold.ttf', 12)
 abmlFont = pygame.font.Font('freesansbold.ttf', 20)
+largeFont = pygame.font.Font('freesansbold.ttf', 64)
 
 class Game():
     '''
@@ -24,6 +26,11 @@ class Game():
     enemy = None
     display = None
     music = None
+    dying = False
+    died = -1
+    sunpos = (0, 0)
+
+    lastExplosion = 0
 
     start = 0
 
@@ -32,6 +39,7 @@ class Game():
     def __init__(self, display):
         self.start = time.time()
         self.resolution = display.get_size()
+        w, h = self.resolution
         self.display = display
         pygame.display.set_caption('Solve or Die')
         self.channel = pygame.mixer.Channel(0)
@@ -42,6 +50,7 @@ class Game():
             enemy.Level1, enemy.Level2, enemy.Level3, enemy.Level4, enemy.Level5
         )
         self.explosions = []
+        self.sunpos = (randint(0, (w/2)), randint(0, h))
 
     '''
     The update and draw functions meshed together
@@ -55,10 +64,19 @@ class Game():
         #self.player.score = int((time.time() - self.start) * 100) # FOR TEST ONLY
         
         surf = pygame.Surface(self.resolution)
-        surf.fill(colors.white)
+        surf.fill(colors.sky_blue)
+
+        surf.blit(assets.sun, self.sunpos)
 
         bgRect = assets.background.get_rect()
         bgRect.midright = screenrect.midright
+        bgRect.right += 50
+        if self.dying:
+            xdeviation = randint(-50, 50)
+            ydeviation = randint(-50, 50)
+            dist = int((time.time() - self.died) * 100)
+            bgRect.right = screenrect.right + dist + xdeviation
+            bgRect.top = bgRect.top + ydeviation
         surf.blit(assets.background, bgRect)
         
         surf.blit(self.enemy.getSurface(), (0, 0))
@@ -78,13 +96,43 @@ class Game():
         for e in self.enemy:
             if e.getProgress() >= 1:
                 e.explode()
-                self.player.hp -= 1
+                if self.player.hp != 0:
+                    self.player.hp -= 1
                 self.player.combo = 1
             elif e.canExplode():
                 e.explode()
 
         if self.player.hp == 0:
-            raise Exception()
+            self.dying = True
+            if self.died == -1:
+                self.died = time.time()
+
+        if self.dying and time.time() - self.lastExplosion > 60 / (140 * 2):
+            self.lastExplosion = time.time()
+            explosions = [
+                assets.explosionEnd1, assets.explosionEnd2,
+                assets.explosion1, assets.explosion2, assets.explosion3,
+                assets.explosionABMF
+            ]
+            sprite = choice(explosions)
+            point = (randint(0, w-1), randint(0, h-1))
+            exp = sprites.spriteAnimation(sprite, 24)
+            exp.start()
+            self.explosions.append((exp, point))
+
+        if self.dying and time.time() - self.died > 5:
+            txt = largeFont.render('GAME OVER', True, colors.black)
+            txtRect = txt.get_rect()
+            txtRect.center = screenrect.center
+            surf.blit(txt, txtRect)
+            if time.time() - self.died > 6:
+                txt2 = abmlFont.render('Press any key to continue', True, colors.black)
+                txt2Rect = txt2.get_rect()
+                txt2Rect.midtop = txtRect.midbottom
+                surf.blit(txt2, txt2Rect)
+                if True in pygame.key.get_pressed():
+                    print('foo')
+                    gameover.endscreen(self.display, 12)# self.player.score)
 
         abml = None
         if self.player.lastMouseY == my:
@@ -139,15 +187,6 @@ class Game():
         game.display.blit(game.updateGetSurface(), (0, 0))
         pygame.display.update()
 
-    def getLabelFormat(self):
-        return {
-            'lives': self.player.hp,
-            'score': self.player.score,
-            'level': self.player.getLevel(),
-            'mousepos': pygame.mouse.get_pos(),
-            'input': self.player.answer,
-        }
-
 class Player():
     '''
     Player handler class. Handles the player's variables
@@ -184,7 +223,10 @@ class Player():
         return s
 
     def canLaunch(self):
-        return self.abmh.isFinished() and self.getSelected() != None and self.answer != ''
+        return all(
+            [self.abmh.isFinished(), self.getSelected() != None,
+             self.answer != '', not self.game.dying]
+        )
 
     def launch(self):
         e = self.getSelected()
@@ -449,17 +491,18 @@ def secToMS(t):
     seconds = t % 60
     return '{0}:{1:0>2}'.format(minutes, seconds)
 
-def main():
+def initGame(display):
     
-    pygame.init()
-
-    d = pygame.display.set_mode((640, 480))
-
-    game = Game(d)
+    game = Game(display)
 
     while True:
         game.mainLoop()
+
+def main():
+    pygame.init()
+    d = pygame.display.set_mode((640, 480))
+    initGame(d)
+    
         
 if __name__ == '__main__':
-    
     main()

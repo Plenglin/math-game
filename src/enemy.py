@@ -166,6 +166,7 @@ class Level1(Enemy):
         return [x], exps
 
     def getTime(self):
+        return 1
         return cap(-self.level + 20, 5, None)
 
     def getValue(self):
@@ -212,6 +213,7 @@ class Level2(Enemy):
 
     def getTime(self):
 
+        return 1
         return cap(-(self.level - 1) + 30, 20, None)
 
     def getValue(self):
@@ -340,7 +342,7 @@ class Level5(Enemy):
     '''
     A trinomial
     Example: x^2 + 9x + 10 = -10
-    Begins spawning at level 15
+    Begins spawning at level 12
     '''
 
     font = Font('freesansbold.ttf', 18)
@@ -361,11 +363,11 @@ class Level5(Enemy):
         b = strCoeffAdd(b)
         c = strAdd(c)
         
-        return [b1, b2], ['x^2{}{}'.format(b, c), '0']
+        return [-b1, -b2], ['x^2{}{}'.format(b, c), '0']
     
     def getTime(self):
 
-        return 25 * 0.95 ** (self.level - 15) + 20
+        return 25 * 0.95 ** (self.level - 12) + 20
         
     def getValue(self):
 
@@ -373,9 +375,9 @@ class Level5(Enemy):
 
     @staticmethod
     def getChance(level):
-        if level < 15:
+        if level < 12:
             return 0
-        chance = 25 * 1.10 ** (level - 15)
+        chance = 25 * 1.10 ** (level - 12)
 
         return int(chance)
 
@@ -470,7 +472,12 @@ def factorsOf(n):
     yield n
         
 def main():
-    pass
+    q = 1
+    for E in (Level1, Level2, Level3, Level4, Level5):
+        for i in range(0, 4):
+            e = E(None, 0)
+            print(q, e)
+            q+=1
     
 if __name__ == '__main__':
     main()

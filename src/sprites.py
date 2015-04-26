@@ -24,6 +24,7 @@ class Animation():
     frames = []
     starttime = 0
     fps = 0
+    hasStarted = False
 
     def __init__(self, frames, fps):
         self.frames = frames
@@ -33,6 +34,7 @@ class Animation():
         return Animation(self.frames, self.fps)
 
     def start(self):
+        self.hasStarted = True
         self.starttime = time.time()
 
     def getFrames(self):
@@ -50,7 +52,7 @@ class Animation():
             return self.frames[self.getFrames() - 1]
 
     def isFinished(self):
-        return self.getFrames() - 1 < self.getFrame()
+        return self.getFrames() - 1 <= self.getFrame() and self.hasStarted
 
     def getRect(self):
         return self.frames[0].get_rect()
@@ -67,7 +69,7 @@ def main():
     import assets
     pygame.init()
     d = pygame.display.set_mode((640, 480))
-    explosionAnimation = spriteAnimation(assets.explosion3, 30)
+    explosionAnimation = spriteAnimation(assets.explosionEnd1, 30)
     explosionAnimation.start()
     while True:
         d.fill(colors.white)
