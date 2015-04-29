@@ -25,7 +25,6 @@ class Game():
     player = None
     enemy = None
     display = None
-    music = None
     dying = False
     died = -1
     sunpos = (0, 0)
@@ -35,15 +34,13 @@ class Game():
     start = 0
 
     explosions = []
-    
+
     def __init__(self, display):
         self.start = time.time()
         self.resolution = display.get_size()
         w, h = self.resolution
         self.display = display
         pygame.display.set_caption('Solve or Die')
-        self.channel = pygame.mixer.Channel(0)
-        self.channel.queue(assets.loop1)
         self.player = Player(self)
         self.enemy = EnemyManager(
             self,
@@ -54,7 +51,7 @@ class Game():
 
     '''
     The update and draw functions meshed together
-    '''    
+    '''
     def updateGetSurface(self):
 
         w, h = self.resolution
@@ -62,7 +59,7 @@ class Game():
         mx, my = pygame.mouse.get_pos()
 
         #self.player.score = int((time.time() - self.start) * 100) # FOR TEST ONLY
-        
+
         surf = pygame.Surface(self.resolution)
         surf.fill(colors.sky_blue)
 
@@ -78,9 +75,11 @@ class Game():
             bgRect.right = screenrect.right + dist + xdeviation
             bgRect.top = bgRect.top + ydeviation
         surf.blit(assets.background, bgRect)
-        
         surf.blit(self.enemy.getSurface(), (0, 0))
-        
+
+        if self.enemy.canSpawn():
+            self.enemy.spawn()
+
         for abm in self.player.abms:
             surf.blit(abm.getSurface(), abm.getPos())
             if abm.hasArrived():
@@ -105,6 +104,7 @@ class Game():
         if self.player.hp == 0:
             self.dying = True
             if self.died == -1:
+                self.player.survived = secToMS(int(time.time() - self.start))
                 self.died = time.time()
 
         if self.dying and time.time() - self.lastExplosion > 60 / (140 * 2):
@@ -131,8 +131,7 @@ class Game():
                 txt2Rect.midtop = txtRect.midbottom
                 surf.blit(txt2, txt2Rect)
                 if True in pygame.key.get_pressed():
-                    print('foo')
-                    gameover.endscreen(self.display, 12)# self.player.score)
+                    gameover.endscreen(self.display, self.player)
 
         abml = None
         if self.player.lastMouseY == my:
@@ -154,10 +153,10 @@ class Game():
         surf.blit(abml, abmlRect)
         surf.blit(abmlText, abmlTextRect)
         surf.blit(self.player.getGUI(), (0, 0))
-        
+
         return surf
 
-    def mainLoop(game):
+    def mainLoop(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -165,26 +164,25 @@ class Game():
             elif event.type == pygame.KEYDOWN:
                 key = pygame.key.name(event.key)
                 if key in '1234567890':
-                    game.player.answer += key
+                    self.player.answer += key
                 elif key in KEYPAD:
-                    game.player.answer += key[1:-1]
+                    self.player.answer += key[1:-1]
                 elif event.key in (pygame.K_KP_MINUS, pygame.K_MINUS):
-                    game.player.negative = not game.player.negative
+                    self.player.negative = not self.player.negative
                 elif event.key == pygame.K_BACKSPACE:
-                    game.player.answer = game.player.answer[:-1]
+                    self.player.answer = self.player.answer[:-1]
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1 and game.player.canLaunch():
-                    game.player.launch()
-                    game.player.negative = False
+                if event.button == 1 and self.player.canLaunch():
+                    self.player.launch()
+                    self.player.negative = False
 
         if not pygame.mixer.get_busy():
-            game.channel.queue(assets.loop1)
-        
-        if game.enemy.canSpawn():
-            game.enemy.spawn()
+            assets.loop1.play()
 
-        game.display.fill(colors.white)
-        game.display.blit(game.updateGetSurface(), (0, 0))
+        surf = self.updateGetSurface()
+
+        self.display.fill(colors.white)
+        self.display.blit(surf, (0, 0))
         pygame.display.update()
 
 class Player():
@@ -201,7 +199,10 @@ class Player():
     game = None
     abms = []
     combo = 1
-    
+    correct = 0
+    total = 0
+    survived = ''
+
     lastMouseY = 0
     lastABML = None
     abmh = None
@@ -223,10 +224,8 @@ class Player():
         return s
 
     def canLaunch(self):
-        return all(
-            [self.abmh.isFinished(), self.getSelected() != None,
-             self.answer != '', not self.game.dying]
-        )
+        criteria = [self.abmh.isFinished(), self.getSelected() != None, self.answer != '', not self.game.dying]
+        return all(criteria)
 
     def launch(self):
         e = self.getSelected()
@@ -246,10 +245,10 @@ class Player():
         if self.answer == '':
             return ''
         return neg + self.answer
-            
+
     def isCorrect(self):
-        return self.getSelected().isCorrect(self.getAnswer())     
-    
+        return self.getSelected().isCorrect(self.getAnswer())
+
     def getSelected(self):
         w, h = self.game.resolution
         for e in self.game.enemy.enemies:
@@ -266,11 +265,11 @@ class Player():
 
         mx, my = pygame.mouse.get_pos()
         self.lastMouseY = my
-        
+
         gui = pygame.Surface(self.game.resolution, pygame.SRCALPHA, 32)
-        
+
         level = self.getLevel()
-        
+
         hpBarRect = pygame.Rect(0, 0, 150, 12)
         hpBarRect.topright = (w - 30, 10)
         hpBar = pgrsBar(
@@ -294,12 +293,12 @@ class Player():
             scoreToNextRect,
             colors.red, colors.orange
         )
-        
+
         scoreText = pgrsFont.render('{} pts'.format(self.score), True, colors.orange)
         scoreRect = scoreText.get_rect()
         scoreRect.midright = scoreToNextRect.midleft
 
-        levelText = pgrsFont.render('Level {}'.format(self.getLevel()), True, colors.black)
+        levelText = pgrsFont.render('Level {}'.format(level), True, colors.black)
         levelRect = levelText.get_rect()
         levelRect.center = scoreToNextRect.center
 
@@ -307,7 +306,7 @@ class Player():
         comboText = pgrsFont.render(combo.format(self.combo), True, colors.white)
         comboRect = comboText.get_rect()
         comboRect.midleft = scoreToNextRect.midright
-        
+
         gui.blit(hpBar, hpBarRect)
         gui.blit(hpText, hpTextRect)
         gui.blit(timerText, timerRect)
@@ -326,11 +325,11 @@ class Player():
 
     def ptsBetweenLevels(self, l1, l2):
         return abs(self.ptsToLevel(l1) - self.ptsToLevel(l2))
-    
+
     def getLevel(self):
         a = 75
         b = -75
-        lvl = ((5625 + 300*self.score)**0.5 + 75) / 150
+        lvl = (-b + (b**2 + 4*a*self.score)**0.5) / (2*a)
         return int(lvl)
 
     def getScoreToNext(self):
@@ -348,8 +347,8 @@ class Player():
         return ptsAfterLast / total
 
 class ABM():
-        
-    speed = 250
+
+    speed = 500
     player = None
     correct = False
     target = 0
@@ -357,7 +356,7 @@ class ABM():
     y = 0
     start = 0
     ans = 0
-    
+
     def __init__(self, player, ans, e, target):
         self.player = player
         self.ans = ans
@@ -384,7 +383,7 @@ class ABM():
     def getSurface(self):
         s = assets.abm.copy()
         srect = s.get_rect()
-        t = abmlFont.render(str(self.ans), True, colors.gray(50))
+        t = abmlFont.render(str(self.ans), True, colors.yellow)
         trect = t.get_rect()
         trect.center = srect.center
         s.blit(t, trect)
@@ -400,8 +399,9 @@ class ABM():
                 if i != a:
                     s.append(i)
             self.enemy.solution = s
-            self.player.abmh = self.player.getABMHolder()
+            self.player.abmh.starttime = 0
             self.player.score += self.enemy.getValue() * self.player.combo
+            self.player.correct += 1
             lastcombo = self.player.combo
             self.player.combo += 1
             if self.player.combo % 10 == 0:
@@ -409,20 +409,21 @@ class ABM():
         else:
             explosion = sprites.spriteAnimation(assets.explosionABMF, 30)
             self.player.combo = 1
+        self.player.total +=1
         explosion.start()
         self.player.game.explosions.append((explosion, self.getPos()))
         self.player.abms.remove(self)
-        
+
 class EnemyManager():
     '''
     Enemy handler class. Handles the enemies.
     '''
 
     available = []
-    enemies = []    
+    enemies = []
     lastSpawn = 0
     game = None
-    
+
     def __init__(self, gameInstance, *availableEnemies):
         self.game = gameInstance
         self.available = availableEnemies
@@ -434,17 +435,17 @@ class EnemyManager():
 
     def spawnchoices(self):
         chips = []
-        for enemy in self.available:
-            toAdd = enemy.getChance(self.game.player.getLevel())
+        for Enemy in self.available:
+            toAdd = Enemy.getChance(self.game.player.getLevel())
             for chip in range(0, toAdd):
-                chips.append(enemy)
+                chips.append(Enemy)
         return chips
 
     def canSpawn(self):
         return time.time() > self.nextSpawn() or len(self.enemies) == 0
-            
+
     def nextSpawn(self):
-        return self.lastSpawn + self.game.player.getLevel() + 10
+        return self.lastSpawn + (5 * 0.9 ** self.game.player.getLevel() + 5)
 
     def spawn(self):
         w, h = self.game.resolution
@@ -471,7 +472,7 @@ class EnemyManager():
         for e in self.enemies:
             if e.getProgress() >= 1:
                 self.enemies.remove(e)
-                self.game.player.hp -= 2        
+                self.game.player.hp -= 2
 
 def pgrsBar(progress, rect, fgColor, bgColor):
     surf = pygame.Surface(rect.size)
@@ -492,9 +493,7 @@ def secToMS(t):
     return '{0}:{1:0>2}'.format(minutes, seconds)
 
 def initGame(display):
-    
     game = Game(display)
-
     while True:
         game.mainLoop()
 
@@ -502,7 +501,7 @@ def main():
     pygame.init()
     d = pygame.display.set_mode((640, 480))
     initGame(d)
-    
-        
+
+
 if __name__ == '__main__':
     main()

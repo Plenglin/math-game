@@ -24,7 +24,7 @@ abmLauncherDown = pygame.transform.flip(abmLauncherUp, False, True)
 abmHolder = loadImg('abm-holder')
 city = loadImg('fnyc')
 coin = loadImg('picoin')
-background = pygame.transform.rotozoom(city, 90, 0.5)
+background = pygame.transform.rotozoom(city, 90, 1)
 explosion1 = loadImg('explosion-r1')
 explosion2 = loadImg('explosion-r2')
 explosion3 = loadImg('explosion-r3')
@@ -35,11 +35,12 @@ explosionEnd2 = loadImg('explosion-gameover-2')
 explosionEnd3 = loadImg('explosion-gameover-3')
 title = pygame.transform.rotozoom(loadImg('title'), 0, 2)
 receptacle = loadImg('receptacle')
+recordBreak = loadImg('recordbreak')
 rocket1 = loadImg('rocket-1')
 rocket2 = loadImg('rocket-2')
 rocket3_1 = loadImg('rocket-3-hp1')
 rocket3_2 = loadImg('rocket-3-hp2')
-sun = loadImg('sun')
+sun = pygame.transform.rotozoom(loadImg('sun'), 0, 2)
 
 loop1 = loadSound('solve-or-die-loop')
 
@@ -53,7 +54,7 @@ jokes = []
 with loadText('puns.txt') as file:
     for line in file:
         if line != '':
-            jokes.append('"{}" -{}'.format(line, random.choice(_authors)))
+            jokes.append('"{}" -{}'.format(line, random.choice(_authors)).replace('\n', ''))
 
 def main():
     pass

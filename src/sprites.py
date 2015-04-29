@@ -52,7 +52,7 @@ class Animation():
             return self.frames[self.getFrames() - 1]
 
     def isFinished(self):
-        return self.getFrames() - 1 <= self.getFrame() and self.hasStarted
+        return self.getFrame() >= self.getFrames() and self.hasStarted
 
     def getRect(self):
         return self.frames[0].get_rect()
@@ -75,7 +75,7 @@ def main():
         d.fill(colors.white)
         d.blit(explosionAnimation.getSurface(), (0, 0))
         pygame.display.update()
-        
+
 
 if __name__ == '__main__':
     main()

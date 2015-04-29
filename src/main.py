@@ -59,9 +59,9 @@ def main():
             pass
         try:
             game.initGame(d)
-        except LevelFinished:
+        except:
             pass
-        
+
 
 if __name__ == '__main__':
     main()
