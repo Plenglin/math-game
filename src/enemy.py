@@ -27,7 +27,7 @@ class Enemy():
 
         self.manager = enemyInstance
 
-        self.level = 1#self.manager.game.player.getLevel()
+        self.level = self.manager.game.player.getLevel()
 
         self.solution, expressions = self.generate(self.level)
         random.shuffle(expressions)
