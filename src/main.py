@@ -30,8 +30,10 @@ def init():
         txt = file.read()
         highscores = json.loads(txt)
     pygame.init()
+    info = pygame.display.Info()
+    resolution = info.current_w, info.current_h
     pygame.display.set_caption("Math Game")
-    display = pygame.display.set_mode((1280, 1024), pygame.FULLSCREEN)
+    display = pygame.display.set_mode(resolution, pygame.FULLSCREEN)
     return display
 
 def terminate():
