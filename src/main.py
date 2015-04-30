@@ -12,10 +12,6 @@ import game
 import title
 
 
-_cameras = pygame.camera.list_cameras()
-cam = pygame.camera.Camera(_cameras[0], (640, 480), 'RGB')
-cam.start()
-
 class LevelFinished(Exception):
     pass
 
@@ -36,22 +32,14 @@ def init():
     pygame.init()
     pygame.display.set_caption("Math Game")
     display = pygame.display.set_mode((1280, 1024), pygame.FULLSCREEN)
-    cam.get_image()
     return display
 
-def bust():
-    img = cam.get_image()
-    pygame.image.save(img, 'he-who-alt-f4s.png')
-
 def terminate():
-    bust()
-    cam.stop()
     pygame.quit()
     sys.exit()
 
 def main():
     d = init()
-    cam.get_image()
     while True:
         try:
             title.startscreen(d)

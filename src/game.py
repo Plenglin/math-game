@@ -97,7 +97,7 @@ class Game():
                 e.explode()
                 if self.player.hp != 0:
                     self.player.hp -= 1
-                self.player.combo = 1
+                self.player.combo = 0
             elif e.canExplode():
                 e.explode()
 
@@ -400,15 +400,14 @@ class ABM():
                     s.append(i)
             self.enemy.solution = s
             self.player.abmh.starttime = 0
-            self.player.score += self.enemy.getValue() * self.player.combo
+            self.player.score += self.enemy.getValue() * cap(self.player.combo, 1, None)
             self.player.correct += 1
-            lastcombo = self.player.combo
             self.player.combo += 1
             if self.player.combo % 10 == 0:
                 self.player.hp += 1
         else:
             explosion = sprites.spriteAnimation(assets.explosionABMF, 30)
-            self.player.combo = 1
+            self.player.combo = 0
         self.player.total +=1
         explosion.start()
         self.player.game.explosions.append((explosion, self.getPos()))
@@ -486,6 +485,13 @@ def pgrsBar(progress, rect, fgColor, bgColor):
 
 KEYPAD = '] ['.join('[1,2,3,4,5,6,7,8,9,0]'.split(',')).split(' ')
 RESOLUTION = (640, 480)
+
+def cap(n, min=None, max=None):
+    if min != None and n < min:
+        return min
+    elif max != None and n > max:
+        return max
+    return n
 
 def secToMS(t):
     minutes = int(t / 60)
