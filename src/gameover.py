@@ -109,7 +109,8 @@ def endscreen(display, player):
 
     highscorestitle = largeFont.render('High Scores', True, colors.white)
     highscorestitlerect = highscorestitle.get_rect()
-    highscorestitlerect.midbottom = highscoresrect.midtop
+    highscorestitlerect.bottomleft = highscoresrect.topleft
+    highscorestitlerect.top -= 5
 
     pun = textFont.render(random.choice(assets.jokes), True, colors.white)
     punrect = pun.get_rect()
@@ -121,7 +122,7 @@ def endscreen(display, player):
         display.blit(accuracy, accuracyrect)
         display.blit(correct, correctrect)
         display.blit(survived, survivedrect)
-        display.blit(highscorestitle, highscoresrect)
+        display.blit(highscorestitle, highscorestitlerect)
         display.blit(highscores, highscoresrect)
         display.blit(pun, punrect)
         display.blit(presskey, presskeyrect)
