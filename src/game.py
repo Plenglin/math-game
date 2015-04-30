@@ -52,13 +52,31 @@ class Game():
     '''
     The update and draw functions meshed together
     '''
-    def updateGetSurface(self):
+    def mainLoop(self):
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                key = pygame.key.name(event.key)
+                if key in '1234567890' and len(self.player.answer) < 2:
+                    self.player.answer += key
+                elif key in KEYPAD:
+                    self.player.answer += key[1:-1]
+                elif event.key in (pygame.K_KP_MINUS, pygame.K_MINUS):
+                    self.player.negative = not self.player.negative
+                elif event.key == pygame.K_BACKSPACE:
+                    self.player.answer = self.player.answer[:-1]
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1 and self.player.canLaunch():
+                    self.player.launch()
+                    self.player.negative = False
+
 
         w, h = self.resolution
         screenrect = pygame.Rect(0, 0, w, h)
         mx, my = pygame.mouse.get_pos()
-
-        #self.player.score = int((time.time() - self.start) * 100) # FOR TEST ONLY
 
         surf = pygame.Surface(self.resolution)
         surf.fill(colors.sky_blue)
@@ -153,28 +171,6 @@ class Game():
         surf.blit(abml, abmlRect)
         surf.blit(abmlText, abmlTextRect)
         surf.blit(self.player.getGUI(), (0, 0))
-
-        return surf
-
-    def mainLoop(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                key = pygame.key.name(event.key)
-                if key in '1234567890':
-                    self.player.answer += key
-                elif key in KEYPAD:
-                    self.player.answer += key[1:-1]
-                elif event.key in (pygame.K_KP_MINUS, pygame.K_MINUS):
-                    self.player.negative = not self.player.negative
-                elif event.key == pygame.K_BACKSPACE:
-                    self.player.answer = self.player.answer[:-1]
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1 and self.player.canLaunch():
-                    self.player.launch()
-                    self.player.negative = False
 
         if not pygame.mixer.get_busy():
             assets.loop1.play()

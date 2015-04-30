@@ -1,9 +1,9 @@
-SOLVE OR DIE
+SOLVE OR ELSE
 ======
-Missiles are falling on your city! Solve the equations they carry to hold them off for as long as possible.
+Missiles are falling on your city! Solve the equations they carry to hold them off for as long as possible. BEWARE: The source code in here is quite messy and illegible.
 
 # How To Play
-This game is similiar to Atari's Missile Command. You start with 5 lives. If you solve an equation with an incorrect number, you lose a life. If an equation makes it to the end, you lose 1 lives. Solving equations by entering a value for one of the X values and clicking on the equation to solve grants points depending on the difficulty of the equation. 
+You start with 5 lives. If you solve an equation with an incorrect number, you lose a life. If an equation makes it to the end, you lose 1 life. Solving equations by entering a value for one of the X values and clicking on the equation to solve grants points depending on the difficulty of the equation. 
 
 # Mechanics
 With each level, the more challenging equations have a higher chance of spawning, and each equation moves faster. Every few levels, a new type of equation enters the spawning pool. The game ends when the player runs out of lives.

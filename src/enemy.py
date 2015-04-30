@@ -211,7 +211,7 @@ class Level2(Enemy):
         return [x], exps
 
     def getTime(self):
-        return cap(-(self.level - 1) + 30, 15, 25)
+        return cap(int(-1.5*(self.level - 1) + 30), 15, 25)
 
     def getValue(self):
 
@@ -261,8 +261,7 @@ class Level3(Enemy):
         return [x], exps
 
     def getTime(self):
-
-        return cap(-self.level + 40, 20, None)
+        return cap(-2*(self.level  -6) + 30, 20, None)
 
     def getValue(self):
 
@@ -309,11 +308,9 @@ class Level4(Enemy):
         return [x1, x2], [equation, '0']
 
     def getTime(self):
-
         return 20
 
     def getValue(self):
-
         return 200
 
     @staticmethod
@@ -365,8 +362,7 @@ class Level5(Enemy):
         return [-b1, -b2], ['x^2{}{}'.format(b, c), '0']
 
     def getTime(self):
-
-        return 25
+        return 30
 
     def getValue(self):
 

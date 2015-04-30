@@ -88,7 +88,7 @@ def endscreen(display, player):
 
     presskey = textFont.render('Press any key to continue', True, colors.white)
     presskeyrect = presskey.get_rect()
-    presskeyrect.midtop = int(displayrect.w / 2), int(displayrect.h * 3/4)
+    presskeyrect.midbottom = displayrect.midbottom
 
     correctrect.bottomleft = displayrect.center
     correctrect.left += 100
@@ -98,7 +98,7 @@ def endscreen(display, player):
 
     highscores = pygame.Surface((350, 420), pygame.SRCALPHA, 32)
     highscoresrect = highscores.get_rect()
-    highscoresrect.center = displayrect.center
+    highscoresrect.midright = displayrect.center
     c = colors.white
     n = 0
     for name, s in scores:
@@ -109,13 +109,11 @@ def endscreen(display, player):
 
     highscorestitle = largeFont.render('High Scores', True, colors.white)
     highscorestitlerect = highscorestitle.get_rect()
-    highscorestitlerect.bottomleft = highscoresrect.topleft
-    highscorestitlerect.top -= 20
+    highscorestitlerect.midbottom = highscoresrect.midtop
 
     pun = textFont.render(random.choice(assets.jokes), True, colors.white)
     punrect = pun.get_rect()
-    punrect.midtop = int(displayrect.w / 2), 0
-    punrect.bottom = highscoresrect.top
+    punrect.topright = displayrect.topright
 
     while True:
         display.fill(colors.black)
