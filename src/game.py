@@ -175,8 +175,6 @@ class Game():
         if not pygame.mixer.get_busy():
             assets.loop1.play()
 
-        surf = self.updateGetSurface()
-
         self.display.fill(colors.white)
         self.display.blit(surf, (0, 0))
         pygame.display.update()
