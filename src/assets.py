@@ -1,12 +1,11 @@
 import random
 
 import pygame
-import pygame.camera
 
 import sprites
 
+
 pygame.init()
-pygame.camera.init()
 
 def loadImg(file):
     return pygame.image.load('assets/sprites/{}.png'.format(file))
